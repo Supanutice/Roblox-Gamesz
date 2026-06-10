@@ -25,7 +25,9 @@ local ENEMY_RESPAWN_SECONDS = 20
 
 -- ----------------------------- ENEMY SPAWNING ------------------------------
 
-local function buildEnemyModel(enemyDef): Model
+-- Builds a stat-stamped enemy model (no AI, no respawn — callers own both).
+-- Public so DungeonService can reuse the same enemy pipeline.
+function SpawnerService.BuildEnemyModel(enemyDef): Model
 	local enemiesFolder = ServerStorage:FindFirstChild("Enemies")
 	local template = enemiesFolder and enemiesFolder:FindFirstChild(enemyDef.Id)
 	local model: Model
@@ -56,7 +58,7 @@ local function buildEnemyModel(enemyDef): Model
 end
 
 local function spawnEnemy(worldDef, enemyDef, position: Vector3)
-	local model = buildEnemyModel(enemyDef)
+	local model = SpawnerService.BuildEnemyModel(enemyDef)
 	model:PivotTo(CFrame.new(position + Vector3.new(0, 4, 0)))
 	model.Parent = workspace
 

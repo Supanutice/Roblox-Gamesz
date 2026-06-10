@@ -21,6 +21,9 @@ Team assumption: 1 lead engineer, 1 gameplay engineer, 2 artists/animators,
       fast-travel pads, secret chests, boss arenas, spawn) — WorldBuilderService
 - [x] Interactable NPCs with dialogue + quest accept/claim — NPCService
 - [x] Characters screen (equip / level / evolve / ascend) + Quest Log screen
+- [x] Party system (invite/accept/kick/leave, max 4) + Party screen (V)
+- [x] Dungeon system: 6 instanced wave dungeons with elite finals, hub
+      portals, party-size scaling, rewards + quest credit — DungeonService
 - [ ] World 1 geometry + placeholder rigs replaced with real art
 - [ ] First playtest: 20-player server soak, save-integrity pass
 

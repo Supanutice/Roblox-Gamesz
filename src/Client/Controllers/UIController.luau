@@ -228,6 +228,19 @@ function UIController:Start()
 	Remotes.Event("NPCDialogue").OnClientEvent:Connect(function(npcName, line)
 		self:Toast(`{npcName}: {line}`)
 	end)
+	Remotes.Event("DungeonEvent").OnClientEvent:Connect(function(eventType, payload)
+		if eventType == "RunStarted" then
+			self:Toast(`⌬ {payload.Name} — dungeon started! ({payload.Members} player(s))`)
+		elseif eventType == "WaveStarted" then
+			self:Toast(if payload.Elite
+				then `☠ FINAL WAVE {payload.Wave}/{payload.TotalWaves} — ELITE!`
+				else `Wave {payload.Wave}/{payload.TotalWaves} incoming…`)
+		elseif eventType == "RunCompleted" then
+			self:Toast("🏆 Dungeon cleared! Rewards granted.")
+		elseif eventType == "RunFailed" then
+			self:Toast("💀 Dungeon failed. Regroup and try again!")
+		end
+	end)
 	Remotes.Event("QuestProgressChanged").OnClientEvent:Connect(function(questId, progress)
 		if profileSnapshot and profileSnapshot.Quests then
 			local active = profileSnapshot.Quests.Active[questId]

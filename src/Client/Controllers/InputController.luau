@@ -65,6 +65,9 @@ function InputController:Init()
 	bindKey(Enum.KeyCode.P, function()
 		self.OpenMenu:Fire("PvP")
 	end)
+	bindKey(Enum.KeyCode.V, function()
+		self.OpenMenu:Fire("Party")
+	end)
 end
 
 function InputController:Start()

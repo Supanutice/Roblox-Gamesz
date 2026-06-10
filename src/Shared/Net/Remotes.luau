@@ -54,6 +54,13 @@ local DEFINITIONS: { [string]: string } = {
 	GuildAction = "Function",           -- (action: string, payload: {}) -> ok, result | err
 	GuildEvent = "Event",               -- server -> client: (eventType, payload)
 
+	-- Party
+	PartyAction = "Function",           -- (action: string, payload: {}) -> ok, result | err
+	PartyUpdated = "Event",             -- server -> client: (partyState | invite)
+
+	-- Dungeons
+	DungeonEvent = "Event",             -- server -> client: (eventType, payload)
+
 	-- Trading
 	TradeAction = "Function",           -- (action: string, payload: {}) -> ok, result | err
 	TradeUpdated = "Event",             -- server -> client: (tradeState)

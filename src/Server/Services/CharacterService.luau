@@ -16,7 +16,7 @@ local Remotes = require(Shared.Net.Remotes)
 
 local CharacterService = { Name = "CharacterService" }
 
-local DataService, InventoryService
+local DataService, InventoryService, AppearanceService
 
 local RARITY_MULT: { [string]: number } = {}
 local RARITY_MAX_EVO: { [string]: number } = {}
@@ -121,6 +121,9 @@ function CharacterService:ApplyStatsToCharacter(player: Player, characterModel: 
 		characterModel:SetAttribute("ATK", 10)
 		characterModel:SetAttribute("DEF", 0)
 		characterModel:SetAttribute("Element", "Fire")
+		if AppearanceService then
+			AppearanceService:ApplyAppearance(player, characterModel, nil)
+		end
 		return
 	end
 
@@ -151,6 +154,11 @@ function CharacterService:ApplyStatsToCharacter(player: Player, characterModel: 
 	characterModel:SetAttribute("Class", def.Class)
 	characterModel:SetAttribute("BaseWalkSpeed", 16 + def.BaseStats.SPD * 0.25)
 	humanoid.WalkSpeed = 16 + def.BaseStats.SPD * 0.25
+
+	-- Visual morph into the equipped hero (palette, headwear, weapon prop).
+	if AppearanceService then
+		AppearanceService:ApplyAppearance(player, characterModel, def)
+	end
 end
 
 -- ============================== PROGRESSION ================================
@@ -238,6 +246,7 @@ end
 function CharacterService:Init(registry)
 	DataService = registry.DataService
 	InventoryService = registry.InventoryService
+	AppearanceService = registry.AppearanceService
 end
 
 function CharacterService:Start()

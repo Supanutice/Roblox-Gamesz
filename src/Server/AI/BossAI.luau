@@ -11,10 +11,31 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local BossDatabase = require(Shared.Data.BossDatabase)
 local Maid = require(Shared.Utilities.Maid)
 local Signal = require(Shared.Utilities.Signal)
+local SafeZones = require(Shared.Utilities.SafeZones)
 local Remotes = require(Shared.Net.Remotes)
 
 local BossAI = {}
 BossAI.__index = BossAI
+
+-- Bosses only fight players inside their arena. Anyone further away — or
+-- standing in a hub safe zone — can never be targeted or splashed.
+local ENGAGE_RANGE = 150
+
+-- Living, in-range, out-of-safe-zone player characters around this boss.
+local function eligibleTargets(self): { Player }
+	local targets = {}
+	for _, player in Players:GetPlayers() do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if root and humanoid and humanoid.Health > 0
+			and not SafeZones.Contains(root.Position)
+			and (root.Position - self.Root.Position).Magnitude <= ENGAGE_RANGE then
+			table.insert(targets, player)
+		end
+	end
+	return targets
+end
 
 -- Generic ability executors. Specific bosses reference these by id in their
 -- AttackPattern; unknown ids fall back to MELEE_SWING so new patterns never
@@ -51,14 +72,14 @@ ability("AOE_SLAM", function(self)
 	end
 end)
 
--- Ranged barrage at random players.
+-- Ranged barrage at random players NEAR THE BOSS (never across the map).
 ability("PROJECTILE_BARRAGE", function(self)
 	for i = 1, 5 do
-		local players = Players:GetPlayers()
-		if #players == 0 then
+		local targets = eligibleTargets(self)
+		if #targets == 0 then
 			return
 		end
-		local target = players[math.random(#players)].Character
+		local target = targets[math.random(#targets)].Character
 		local root = target and target:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if root then
 			Remotes.Event("CombatStateChanged"):FireAllClients("BossTelegraph",
@@ -106,7 +127,7 @@ function BossAI.new(bossId: string, spawnCFrame: CFrame, services: { [string]: a
 	self.Enraged = false
 
 	-- Build the model (asset cloned from ServerStorage/Bosses if present;
-	-- placeholder rig otherwise so logic is testable without art).
+	-- procedural pirate-lord / sea-beast rig otherwise).
 	local serverStorage = game:GetService("ServerStorage")
 	local bossesFolder = serverStorage:FindFirstChild("Bosses")
 	local template = bossesFolder and bossesFolder:FindFirstChild(bossId)
@@ -114,16 +135,8 @@ function BossAI.new(bossId: string, spawnCFrame: CFrame, services: { [string]: a
 	if template then
 		model = template:Clone()
 	else
-		model = Instance.new("Model")
-		model.Name = def.Name
-		local root = Instance.new("Part")
-		root.Name = "HumanoidRootPart"
-		root.Size = Vector3.new(8, 12, 8)
-		root.Anchored = false
-		root.Parent = model
-		model.PrimaryPart = root
-		local humanoid = Instance.new("Humanoid")
-		humanoid.Parent = model
+		local EnemyModelBuilder = require(script.Parent.Parent.Modules.EnemyModelBuilder)
+		model = EnemyModelBuilder.BuildBoss(def)
 	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid
@@ -173,6 +186,14 @@ end
 
 function BossAI:RunPatternLoop()
 	while self.Humanoid.Health > 0 and self.Model.Parent do
+		-- Idle until someone actually enters the arena. The enrage clock
+		-- starts on engagement, not on spawn.
+		if #eligibleTargets(self) == 0 then
+			self.SpawnedAt = os.clock()
+			task.wait(2)
+			continue
+		end
+
 		-- Phase check: pick the deepest phase whose threshold we've crossed.
 		local fraction = self.Humanoid.Health / self.Humanoid.MaxHealth
 		for index = #self.Def.Phases, 1, -1 do
@@ -197,10 +218,10 @@ function BossAI:RunPatternLoop()
 			if self.Humanoid.Health <= 0 or not self.Model.Parent then
 				return
 			end
-			-- Chase nearest player between abilities.
+			-- Chase the nearest ELIGIBLE player between abilities.
 			local nearest: BasePart? = nil
 			local nearestDistance = math.huge
-			for _, player in Players:GetPlayers() do
+			for _, player in eligibleTargets(self) do
 				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if root then
 					local distance = (root.Position - self.Root.Position).Magnitude

@@ -11,27 +11,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Maid = require(Shared.Utilities.Maid)
-local WorldConfig = require(Shared.Configs.WorldConfig)
+local SafeZones = require(Shared.Utilities.SafeZones)
 
 local AIController = {}
 AIController.__index = AIController
 
--- Safe zones: enemies never target (and drop aggro on) players inside this
--- radius around any world hub plaza — spawn/village areas are no-combat.
-local SAFE_ZONE_RADIUS = 60
-local HUB_POSITIONS: { Vector3 } = {}
-for _, worldDef in WorldConfig.Worlds do
-	table.insert(HUB_POSITIONS, worldDef.FastTravelPoints[1].Position)
-end
-
 local function inSafeZone(position: Vector3): boolean
-	for _, hub in HUB_POSITIONS do
-		local flat = position - hub
-		if Vector3.new(flat.X, 0, flat.Z).Magnitude <= SAFE_ZONE_RADIUS then
-			return true
-		end
-	end
-	return false
+	return SafeZones.Contains(position)
 end
 
 export type AIConfig = {

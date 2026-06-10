@@ -14,6 +14,7 @@ local Remotes = require(Shared.Net.Remotes)
 
 local AIController = require(script.Parent.Parent.AI.AIController)
 local BossAI = require(script.Parent.Parent.AI.BossAI)
+local EnemyModelBuilder = require(script.Parent.Parent.Modules.EnemyModelBuilder)
 
 local SpawnerService = { Name = "SpawnerService" }
 
@@ -34,16 +35,29 @@ function SpawnerService.BuildEnemyModel(enemyDef): Model
 	if template then
 		model = template:Clone()
 	else
-		-- Placeholder rig keeps gameplay testable before art lands.
-		model = Instance.new("Model")
-		local root = Instance.new("Part")
-		root.Name = "HumanoidRootPart"
-		root.Size = Vector3.new(2, 5, 2)
-		root.Parent = model
-		model.PrimaryPart = root
-		Instance.new("Humanoid").Parent = model
+		-- Procedural pirate-saga rig until real art lands.
+		model = EnemyModelBuilder.BuildEnemy(enemyDef)
 	end
 	model.Name = enemyDef.Name
+
+	-- Overhead nameplate.
+	local rootPart = model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if rootPart then
+		local billboard = Instance.new("BillboardGui")
+		billboard.Size = UDim2.fromScale(8, 1.6)
+		billboard.StudsOffset = Vector3.new(0, 4.5, 0)
+		billboard.MaxDistance = 140
+		billboard.Parent = rootPart
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+		label.TextColor3 = Color3.fromRGB(255, 120, 110)
+		label.TextStrokeTransparency = 0.5
+		label.Text = `{enemyDef.Name}  Lv.{enemyDef.Level}`
+		label.Parent = billboard
+	end
 
 	local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 	local hp = 100 + enemyDef.Level ^ 1.9 * 8

@@ -164,7 +164,11 @@ function SpawnerService:Start()
 		for _, enemyDef in worldDef.Enemies do
 			for i = 1, ENEMIES_PER_TYPE do
 				local base = worldDef.FastTravelPoints[1].Position
-				local offset = Vector3.new(math.random(-120, 120), 0, math.random(-120, 120))
+				-- Ring spawn: never inside the hub safe zone (60) + wander
+				-- buffer (25), never off the 420-stud main island.
+				local angle = math.random() * math.pi * 2
+				local distance = 90 + math.random() * 70 -- 90..160 studs
+				local offset = Vector3.new(math.cos(angle) * distance, 0, math.sin(angle) * distance)
 				task.spawn(spawnEnemy, worldDef, enemyDef, base + offset)
 			end
 		end

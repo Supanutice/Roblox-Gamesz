@@ -102,6 +102,20 @@ local function buildWorld(worldDef: WorldConfig.WorldDef, worldsFolder: Folder)
 	})
 	addLabel(plaza, worldDef.Name, theme.Accent)
 
+	-- Visible safe-zone boundary (matches AIController.SAFE_ZONE_RADIUS = 60).
+	makePart({
+		Name = "SafeZoneRing",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.4, 120, 120),
+		CFrame = CFrame.new(hub - Vector3.new(0, 0.7, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(140, 255, 180),
+		Material = Enum.Material.Neon,
+		Transparency = 0.82,
+		CanCollide = false,
+		CanQuery = false,
+		Parent = container,
+	})
+
 	-- Island + glowing pad per fast-travel point; touching unlocks it and
 	-- counts toward "Reach" quest objectives.
 	for index, point in worldDef.FastTravelPoints do

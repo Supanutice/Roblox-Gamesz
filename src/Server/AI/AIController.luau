@@ -11,9 +11,28 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Maid = require(Shared.Utilities.Maid)
+local WorldConfig = require(Shared.Configs.WorldConfig)
 
 local AIController = {}
 AIController.__index = AIController
+
+-- Safe zones: enemies never target (and drop aggro on) players inside this
+-- radius around any world hub plaza — spawn/village areas are no-combat.
+local SAFE_ZONE_RADIUS = 60
+local HUB_POSITIONS: { Vector3 } = {}
+for _, worldDef in WorldConfig.Worlds do
+	table.insert(HUB_POSITIONS, worldDef.FastTravelPoints[1].Position)
+end
+
+local function inSafeZone(position: Vector3): boolean
+	for _, hub in HUB_POSITIONS do
+		local flat = position - hub
+		if Vector3.new(flat.X, 0, flat.Z).Magnitude <= SAFE_ZONE_RADIUS then
+			return true
+		end
+	end
+	return false
+end
 
 export type AIConfig = {
 	AggroRange: number,
@@ -77,7 +96,7 @@ function AIController:FindTarget(): Model?
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if root and humanoid and humanoid.Health > 0 then
+		if root and humanoid and humanoid.Health > 0 and not inSafeZone(root.Position) then
 			local distance = (root.Position - self.Root.Position).Magnitude
 			if distance < closestDistance then
 				closest = character
@@ -139,6 +158,13 @@ function AIController:TickChase()
 		return
 	end
 	local targetRoot = (self.Target :: Model):FindFirstChild("HumanoidRootPart") :: BasePart
+	-- Target reached the village safe zone: break off immediately.
+	if inSafeZone(targetRoot.Position) then
+		self.Target = nil
+		self.State = "Patrol"
+		self.Humanoid:MoveTo(self.SpawnPosition)
+		return
+	end
 	local distance = (targetRoot.Position - self.Root.Position).Magnitude
 	-- De-aggro leash: don't chase across the world.
 	if distance > self.Config.AggroRange * 2 then
@@ -162,6 +188,12 @@ function AIController:TickAttack()
 		return
 	end
 	local targetRoot = (self.Target :: Model):FindFirstChild("HumanoidRootPart") :: BasePart
+	if inSafeZone(targetRoot.Position) then
+		self.Target = nil
+		self.State = "Patrol"
+		self.Humanoid:MoveTo(self.SpawnPosition)
+		return
+	end
 	local distance = (targetRoot.Position - self.Root.Position).Magnitude
 	if distance > self.Config.AttackRange * 1.5 then
 		self.State = "Chase"

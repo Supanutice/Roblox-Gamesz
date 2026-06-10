@@ -10,9 +10,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PvPConfig = require(Shared.Configs.PvPConfig)
 local Formulas = require(Shared.Utilities.Formulas)
+local Signal = require(Shared.Utilities.Signal)
 local Remotes = require(Shared.Net.Remotes)
 
-local PvPService = { Name = "PvPService" }
+local PvPService = {
+	Name = "PvPService",
+	MatchStarted = Signal.new(), -- (match) — ArenaService builds & runs rounds
+	MatchEnded = Signal.new(),   -- (match, winner: "A"|"B") — ArenaService cleans up
+}
 
 local DataService, QuestService
 
@@ -176,8 +181,9 @@ function PvPService:StartMatch(mode: string, teamA: { Player }, teamB: { Player 
 	for _, player in teamB do
 		Remotes.Event("PvPMatchFound"):FireClient(player, info)
 	end
-	-- Arena teleport/round flow is handled by the arena map scripts, which
-	-- call ReportRoundWinner below. Timeout failsafe:
+	PvPService.MatchStarted:Fire(match)
+	-- Round flow is driven by ArenaService, which calls ReportRoundWinner.
+	-- Timeout failsafe:
 	task.delay(PvPConfig.Match.DurationSeconds * PvPConfig.Match.BestOf + 60, function()
 		if activeMatches[match.Id] then
 			self:EndMatch(match, if match.ScoreA >= match.ScoreB then "A" else "B")
@@ -203,7 +209,11 @@ function PvPService:ReportRoundWinner(matchId: string, team: "A" | "B")
 end
 
 function PvPService:EndMatch(match: Match, winner: "A" | "B")
+	if not activeMatches[match.Id] then
+		return -- already ended (double-report guard)
+	end
 	activeMatches[match.Id] = nil
+	PvPService.MatchEnded:Fire(match, winner)
 	local winners = if winner == "A" then match.TeamA else match.TeamB
 	local losers = if winner == "A" then match.TeamB else match.TeamA
 	local ranked = PvPConfig.Modes[match.Mode].Ranked

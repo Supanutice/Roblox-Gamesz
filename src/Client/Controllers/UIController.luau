@@ -225,6 +225,19 @@ function UIController:Start()
 			refreshCurrencies()
 		end
 	end)
+	Remotes.Event("NPCDialogue").OnClientEvent:Connect(function(npcName, line)
+		self:Toast(`{npcName}: {line}`)
+	end)
+	Remotes.Event("QuestProgressChanged").OnClientEvent:Connect(function(questId, progress)
+		if profileSnapshot and profileSnapshot.Quests then
+			local active = profileSnapshot.Quests.Active[questId]
+			if active then
+				active.Progress = progress
+			else
+				profileSnapshot.Quests.Active[questId] = { Progress = progress, AcceptedAt = os.time() }
+			end
+		end
+	end)
 
 	-- Health bar follows the live humanoid.
 	local function watchCharacter(character: Model)

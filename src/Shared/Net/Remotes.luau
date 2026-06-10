@@ -60,6 +60,7 @@ local DEFINITIONS: { [string]: string } = {
 
 	-- World / travel
 	FastTravelRequest = "Function",     -- (worldId: string, pointId: string) -> ok, err
+	NPCDialogue = "Event",              -- server -> client: (npcName: string, line: string)
 
 	-- Shop / monetization (cosmetics only)
 	ShopPurchase = "Function",          -- (productId: string) -> ok, err

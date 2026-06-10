@@ -17,6 +17,10 @@ Team assumption: 1 lead engineer, 1 gameplay engineer, 2 artists/animators,
 - [x] Enemy AI + Kraken Spawn boss; spawner/respawn loops
 - [x] HUD, Summon, Inventory screens; damage numbers; telegraphs
 - [x] AntiCheat v1 (movement, damage ceiling, remote budget, ledger)
+- [x] Procedural placeholder geometry for all 6 worlds (islands, bridges,
+      fast-travel pads, secret chests, boss arenas, spawn) — WorldBuilderService
+- [x] Interactable NPCs with dialogue + quest accept/claim — NPCService
+- [x] Characters screen (equip / level / evolve / ascend) + Quest Log screen
 - [ ] World 1 geometry + placeholder rigs replaced with real art
 - [ ] First playtest: 20-player server soak, save-integrity pass
 

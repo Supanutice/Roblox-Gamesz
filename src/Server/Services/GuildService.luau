@@ -19,10 +19,13 @@ local Remotes = require(Shared.Net.Remotes)
 local GuildService = { Name = "GuildService" }
 
 local DataService
+local registry: { [string]: any }
 
 local guildStore: DataStore
 -- Server-local cache of guild docs this server's players belong to.
 local guildCache: { [string]: any } = {}
+-- Pending guild invites (in-server): invitee -> info.
+local guildInvites: { [Player]: { GuildId: string, GuildName: string, ExpiresAt: number } } = {}
 
 type GuildDoc = {
 	Id: string,
@@ -239,10 +242,48 @@ function GuildService:AddGuildXP(guildId: string, amount: number)
 	end)
 end
 
+function GuildService:GetGuild(guildId: string)
+	return loadGuild(guildId)
+end
+
+-- Atomically validates permission + weekly attempts, consumes one attempt,
+-- and returns this week's rotation boss. Called by RaidService.
+function GuildService:ConsumeRaidAttempt(player: Player): (boolean, string?, { GuildId: string, BossId: string }?)
+	local profile = DataService:GetProfile(player)
+	local guildId = profile and profile.Data.GuildId
+	if not guildId then
+		return false, "Not in a guild"
+	end
+	local week = math.floor(os.time() / 604_800)
+	local bossId = GuildConfig.Raids.BossRotation[(week % #GuildConfig.Raids.BossRotation) + 1]
+	local denyReason = "No permission"
+	local ok = mutateGuild(guildId, function(doc)
+		if not hasPermission(doc, player.UserId, "StartRaid") then
+			denyReason = "Only leaders/officers can start raids"
+			return false
+		end
+		if doc.WeekStamp ~= week then
+			doc.WeekStamp = week
+			doc.RaidAttemptsThisWeek = 0
+		end
+		if doc.RaidAttemptsThisWeek >= GuildConfig.Raids.WeeklyAttempts then
+			denyReason = "No raid attempts left this week"
+			return false
+		end
+		doc.RaidAttemptsThisWeek += 1
+		return true
+	end)
+	if not ok then
+		return false, denyReason
+	end
+	return true, nil, { GuildId = guildId, BossId = bossId }
+end
+
 -- ------------------------------- LIFECYCLE ----------------------------------
 
-function GuildService:Init(registry)
-	DataService = registry.DataService
+function GuildService:Init(serviceRegistry)
+	registry = serviceRegistry
+	DataService = serviceRegistry.DataService
 	guildStore = DataStoreService:GetDataStore("Guilds_v1")
 end
 
@@ -290,9 +331,50 @@ function GuildService:Start()
 				return true
 			end)
 			return ok
+		elseif action == "Invite" then
+			if typeof(payload.UserId) ~= "number" then
+				return false, "Invalid"
+			end
+			local profile = DataService:GetProfile(player)
+			local guildId = profile and profile.Data.GuildId
+			if not guildId then
+				return false, "Not in a guild"
+			end
+			local doc = loadGuild(guildId)
+			if not doc or not hasPermission(doc, player.UserId, "Invite") then
+				return false, "No invite permission"
+			end
+			local target = Players:GetPlayerByUserId(payload.UserId)
+			if not target or target == player then
+				return false, "Player not found"
+			end
+			local targetProfile = DataService:GetProfile(target)
+			if not targetProfile or targetProfile.Data.GuildId then
+				return false, "Player already has a guild"
+			end
+			guildInvites[target] = { GuildId = guildId, GuildName = doc.Name, ExpiresAt = os.clock() + 120 }
+			Remotes.Event("GuildEvent"):FireClient(target, "Invite",
+				{ GuildName = doc.Name, From = player.DisplayName })
+			return true
+		elseif action == "AcceptInvite" then
+			local invite = guildInvites[player]
+			guildInvites[player] = nil
+			if not invite or os.clock() > invite.ExpiresAt then
+				return false, "Invite expired"
+			end
+			return self:JoinGuild(player, invite.GuildId)
+		elseif action == "StartRaid" then
+			if registry.RaidService then
+				return registry.RaidService:StartRaid(player)
+			end
+			return false, "Raids unavailable"
 		end
 		return false, "Unknown action"
 	end
+
+	Players.PlayerRemoving:Connect(function(player)
+		guildInvites[player] = nil
+	end)
 end
 
 return GuildService

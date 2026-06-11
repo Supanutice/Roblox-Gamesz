@@ -33,26 +33,68 @@ local ClassLooks: { [string]: { Hat: string, Prop: string } } = {
 	Support = { Hat = "Halo", Prop = "Tome" },
 }
 
+-- Anime hair: default style per class; per-character overrides below.
+local ClassHair: { [string]: string } = {
+	Fighter = "SpikyWild",
+	Assassin = "SpikyShort",
+	Tank = "SlickBack",
+	Mage = "LongStraight",
+	Support = "Ponytail",
+}
+
+-- Default anime hair color per element (overridable per character).
+local HairColorByElement: { [string]: Color3 } = {
+	Fire = Color3.fromRGB(205, 65, 45),
+	Water = Color3.fromRGB(45, 80, 170),
+	Wind = Color3.fromRGB(80, 170, 100),
+	Earth = Color3.fromRGB(125, 85, 50),
+	Light = Color3.fromRGB(245, 222, 145),
+	Dark = Color3.fromRGB(48, 38, 62),
+	Lightning = Color3.fromRGB(250, 212, 90),
+	Ice = Color3.fromRGB(195, 222, 240),
+}
+
 -- Signature overrides. Theme "Pirate" swaps headwear to seafarer gear and
--- adds a sash; used across the Grand Ocean roster.
-local Overrides: { [string]: { Hat: string?, Prop: string?, Theme: string? } } = {
+-- adds a sash; Hair/HairColor give marquee heroes cover-art identities.
+local Overrides: { [string]: { Hat: string?, Prop: string?, Theme: string?, Hair: string?, HairColor: Color3? } } = {
 	-- The pirate crew (Water / sea-flavored heroes).
-	CHR_002 = { Theme = "Pirate", Hat = "StrawHat" },   -- Mira Tidesong
-	CHR_012 = { Theme = "Pirate", Hat = "Bandana" },    -- Umi Coralguard
-	CHR_016 = { Theme = "Pirate", Hat = "TricornHat" }, -- Suiren Mistveil
-	CHR_026 = { Theme = "Pirate", Hat = "StrawHat" },   -- Minato Wavebreaker
-	CHR_038 = { Theme = "Pirate", Hat = "TricornHat" }, -- Nerei Abysswalker
-	CHR_046 = { Theme = "Pirate", Hat = "CaptainCoat" },-- Susanoo Tidalwrath
+	CHR_002 = { Theme = "Pirate", Hat = "StrawHat", Hair = "LongStraight", HairColor = Color3.fromRGB(70, 130, 200) },
+	CHR_012 = { Theme = "Pirate", Hat = "Bandana" },
+	CHR_016 = { Theme = "Pirate", Hat = "TricornHat", Hair = "LongStraight" },
+	CHR_026 = { Theme = "Pirate", Hat = "StrawHat", Hair = "SpikyWild" },
+	CHR_038 = { Theme = "Pirate", Hat = "TricornHat", Hair = "LongStraight", HairColor = Color3.fromRGB(30, 45, 90) },
+	CHR_046 = { Theme = "Pirate", Hat = "CaptainCoat", Hair = "SpikyWild", HairColor = Color3.fromRGB(40, 60, 120) },
+
+	-- Heroines with signature hairstyles.
+	CHR_005 = { Hair = "TwinTails", HairColor = Color3.fromRGB(250, 230, 160) },  -- Sera Dawnlight
+	CHR_008 = { Hair = "LongStraight", HairColor = Color3.fromRGB(225, 240, 250) }, -- Yuki Frostpetal
+	CHR_010 = { Hair = "Ponytail", HairColor = Color3.fromRGB(120, 190, 120) },   -- Hana Bloomweaver
+	CHR_014 = { Hair = "TwinTails" },                                              -- Anzu Palewind
+	CHR_019 = { Hair = "LongStraight", HairColor = Color3.fromRGB(255, 235, 170) },-- Luxia Sunmantle
+	CHR_022 = { Hair = "Ponytail", HairColor = Color3.fromRGB(205, 228, 245) },   -- Fuyumi Glasswind
+	CHR_027 = { Hair = "LongStraight", HairColor = Color3.fromRGB(230, 80, 50) }, -- Ignia Pyrelance
+	CHR_031 = { Hair = "TwinTails", HairColor = Color3.fromRGB(255, 240, 190) },  -- Aurelia Lightveil
+	CHR_034 = { Hair = "LongStraight", HairColor = Color3.fromRGB(235, 245, 255) },-- Setsuna Snowlotus
+	CHR_036 = { Hair = "Ponytail", HairColor = Color3.fromRGB(240, 240, 250) },   -- Tsubaki Moonblade
+	CHR_041 = { Hair = "LongStraight", HairColor = Color3.fromRGB(255, 245, 210) },-- Seraphina
+	CHR_045 = { Hair = "LongStraight", HairColor = Color3.fromRGB(255, 120, 60) },-- Amaterasu
+	CHR_047 = { Hair = "LongStraight", HairColor = Color3.fromRGB(235, 230, 245) },-- Izanami
+	CHR_049 = { Hair = "TwinTails", HairColor = Color3.fromRGB(240, 235, 255) },  -- Alice Paradoxia
 
 	-- A few signature non-pirate looks.
-	CHR_037 = { Hat = "OniHorns" },                     -- Enma Hellsplitter
-	CHR_044 = { Hat = "WolfEars" },                     -- Okami Bloodmoon
-	CHR_050 = { Hat = "StarCrown" },                    -- Astraea, Last Star
+	CHR_001 = { Hair = "SpikyWild", HairColor = Color3.fromRGB(220, 70, 40) },    -- Kaito (cover hero)
+	CHR_037 = { Hat = "OniHorns", Hair = "SpikyWild", HairColor = Color3.fromRGB(180, 40, 40) }, -- Enma
+	CHR_042 = { Hair = "SpikyWild", HairColor = Color3.fromRGB(240, 240, 245) },  -- Mukuro (white-haired)
+	CHR_044 = { Hat = "WolfEars", Hair = "SpikyWild", HairColor = Color3.fromRGB(90, 85, 100) }, -- Okami
+	CHR_048 = { Hair = "SlickBack", HairColor = Color3.fromRGB(20, 20, 26) },     -- Zero
+	CHR_050 = { Hat = "StarCrown", Hair = "LongStraight", HairColor = Color3.fromRGB(255, 250, 225) }, -- Astraea
 }
 
 return {
 	ElementPalettes = ElementPalettes,
 	ClassLooks = ClassLooks,
+	ClassHair = ClassHair,
+	HairColorByElement = HairColorByElement,
 	Overrides = Overrides,
 	SkinTone = Color3.fromRGB(255, 215, 180),
 }

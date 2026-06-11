@@ -43,6 +43,213 @@ local function limb(character: Model, r15Name: string, r6Name: string): BasePart
 	return (character:FindFirstChild(r15Name) or character:FindFirstChild(r6Name)) :: BasePart?
 end
 
+local function wedgeProp(parent: Model, size: Vector3, color: Color3): WedgePart
+	local wedge = Instance.new("WedgePart")
+	wedge.Size = size
+	wedge.Color = color
+	wedge.Material = Enum.Material.SmoothPlastic
+	wedge.CanCollide = false
+	wedge.CanQuery = false
+	wedge.Massless = true
+	wedge.Name = ACCESSORY_TAG
+	wedge.Parent = parent
+	return wedge
+end
+
+local function weldWedge(wedge: WedgePart, anchor: BasePart, offset: CFrame)
+	wedge.CFrame = anchor.CFrame * offset
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = anchor
+	weld.Part1 = wedge
+	weld.Parent = wedge
+end
+
+-- ------------------------------ ANIME HAIR -----------------------------------
+
+local HAIRS: { [string]: (character: Model, head: BasePart, color: Color3) -> () } = {}
+
+local function hairCap(character: Model, head: BasePart, color: Color3)
+	local cap = prop(character, Vector3.new(1.34, 0.62, 1.34), color)
+	weldTo(cap, head, CFrame.new(0, 0.42, 0))
+	-- Front bangs.
+	local bangs = prop(character, Vector3.new(1.3, 0.42, 0.26), color)
+	weldTo(bangs, head, CFrame.new(0, 0.34, -0.58) * CFrame.Angles(math.rad(-12), 0, 0))
+end
+
+HAIRS.SpikyShort = function(character, head, color)
+	hairCap(character, head, color)
+	for index = 1, 5 do
+		local angle = (index - 3) * 0.5
+		local spike = wedgeProp(character, Vector3.new(0.34, 0.72, 0.5), color)
+		weldWedge(spike, head,
+			CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.82, -0.28) * CFrame.Angles(math.rad(-25), 0, 0))
+	end
+end
+
+HAIRS.SpikyWild = function(character, head, color)
+	hairCap(character, head, color)
+	-- Shonen-protagonist spikes: a ring plus a tall center crest.
+	for index = 1, 8 do
+		local angle = index / 8 * math.pi * 2
+		local spike = wedgeProp(character, Vector3.new(0.4, 1.05, 0.62), color)
+		weldWedge(spike, head,
+			CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.92, -0.34) * CFrame.Angles(math.rad(-32), 0, 0))
+	end
+	local crest = wedgeProp(character, Vector3.new(0.46, 1.25, 0.72), color)
+	weldWedge(crest, head, CFrame.new(0, 1.15, 0.05) * CFrame.Angles(math.rad(-14), 0, 0))
+end
+
+HAIRS.LongStraight = function(character, head, color)
+	hairCap(character, head, color)
+	local back = prop(character, Vector3.new(1.3, 2.3, 0.32), color)
+	weldTo(back, head, CFrame.new(0, -0.55, 0.62) * CFrame.Angles(math.rad(4), 0, 0))
+	for _, side in { -1, 1 } do
+		local panel = prop(character, Vector3.new(0.3, 1.7, 0.6), color)
+		weldTo(panel, head, CFrame.new(side * 0.68, -0.3, 0.1))
+	end
+end
+
+HAIRS.Ponytail = function(character, head, color)
+	hairCap(character, head, color)
+	local band = prop(character, Vector3.new(0.34, 0.22, 0.34), Color3.fromRGB(60, 50, 55))
+	weldTo(band, head, CFrame.new(0, 0.62, 0.62))
+	for segment = 1, 3 do
+		local size = 0.52 - segment * 0.1
+		local tail = prop(character, Vector3.new(size, 0.85, size), color)
+		weldTo(tail, head,
+			CFrame.new(0, 0.62 - segment * 0.62, 0.72 + segment * 0.16) * CFrame.Angles(math.rad(12), 0, 0))
+	end
+end
+
+HAIRS.TwinTails = function(character, head, color)
+	hairCap(character, head, color)
+	for _, side in { -1, 1 } do
+		for segment = 1, 3 do
+			local size = 0.42 - segment * 0.08
+			local tail = prop(character, Vector3.new(size, 0.8, size), color)
+			weldTo(tail, head,
+				CFrame.new(side * 0.74, 0.45 - segment * 0.58, 0.18)
+					* CFrame.Angles(0, 0, math.rad(side * 8)))
+		end
+	end
+end
+
+HAIRS.SlickBack = function(character, head, color)
+	hairCap(character, head, color)
+	local back = wedgeProp(character, Vector3.new(1.3, 0.62, 1.0), color)
+	weldWedge(back, head, CFrame.new(0, 0.74, 0.24) * CFrame.Angles(math.rad(180), math.rad(180), 0))
+end
+
+-- ------------------------------ ANIME FACE -----------------------------------
+
+local function buildFace(character: Model, head: BasePart, palette: AppearanceData.Palette)
+	-- Replace the default Roblox face decal with a drawn anime face.
+	local oldFace = head:FindFirstChild("face")
+	if oldFace then
+		oldFace:Destroy()
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = ACCESSORY_TAG
+	gui.Face = Enum.NormalId.Front
+	gui.CanvasSize = Vector2.new(120, 120)
+	gui.LightInfluence = 1
+	gui.Parent = head
+
+	for _, side in { -1, 1 } do
+		local eye = Instance.new("Frame")
+		eye.AnchorPoint = Vector2.new(0.5, 0.5)
+		eye.Position = UDim2.fromScale(0.5 + side * 0.19, 0.5)
+		eye.Size = UDim2.fromScale(0.17, 0.3)
+		eye.BackgroundColor3 = Color3.fromRGB(35, 32, 42)
+		eye.BorderSizePixel = 0
+		eye.Parent = gui
+		local eyeCorner = Instance.new("UICorner")
+		eyeCorner.CornerRadius = UDim.new(0.5, 0)
+		eyeCorner.Parent = eye
+
+		local iris = Instance.new("Frame")
+		iris.AnchorPoint = Vector2.new(0.5, 0.5)
+		iris.Position = UDim2.fromScale(0.5, 0.42)
+		iris.Size = UDim2.fromScale(0.62, 0.5)
+		iris.BackgroundColor3 = palette.Accent
+		iris.BorderSizePixel = 0
+		iris.Parent = eye
+		local irisCorner = Instance.new("UICorner")
+		irisCorner.CornerRadius = UDim.new(0.5, 0)
+		irisCorner.Parent = iris
+
+		local sparkle = Instance.new("Frame")
+		sparkle.AnchorPoint = Vector2.new(0.5, 0.5)
+		sparkle.Position = UDim2.fromScale(0.32, 0.26)
+		sparkle.Size = UDim2.fromScale(0.3, 0.24)
+		sparkle.BackgroundColor3 = Color3.new(1, 1, 1)
+		sparkle.BorderSizePixel = 0
+		sparkle.Parent = eye
+		local sparkleCorner = Instance.new("UICorner")
+		sparkleCorner.CornerRadius = UDim.new(0.5, 0)
+		sparkleCorner.Parent = sparkle
+
+		local brow = Instance.new("Frame")
+		brow.AnchorPoint = Vector2.new(0.5, 0.5)
+		brow.Position = UDim2.fromScale(0.5 + side * 0.19, 0.27)
+		brow.Size = UDim2.fromScale(0.2, 0.035)
+		brow.BackgroundColor3 = Color3.fromRGB(45, 40, 50)
+		brow.BorderSizePixel = 0
+		brow.Rotation = side * -8
+		brow.Parent = gui
+	end
+
+	local mouth = Instance.new("Frame")
+	mouth.AnchorPoint = Vector2.new(0.5, 0.5)
+	mouth.Position = UDim2.fromScale(0.5, 0.78)
+	mouth.Size = UDim2.fromScale(0.12, 0.03)
+	mouth.BackgroundColor3 = Color3.fromRGB(120, 70, 70)
+	mouth.BorderSizePixel = 0
+	mouth.Parent = gui
+end
+
+-- ------------------------------ RARITY AURA -----------------------------------
+
+local GameConfig = require(Shared.Configs.GameConfig)
+local RARITY_TIER: { [string]: number } = {}
+for tier, rarity in GameConfig.Rarities do
+	RARITY_TIER[rarity.Name] = tier
+end
+
+local function buildAura(character: Model, palette: AppearanceData.Palette, rarity: string)
+	local tier = RARITY_TIER[rarity] or 1
+	if tier < 3 then
+		return -- auras start at Epic
+	end
+	local torso = limb(character, "UpperTorso", "Torso")
+	if not torso then
+		return
+	end
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name = ACCESSORY_TAG
+	emitter.Color = ColorSequence.new(palette.Accent)
+	emitter.Rate = (tier - 2) * 4
+	emitter.Lifetime = NumberRange.new(0.6, 1.2)
+	emitter.Speed = NumberRange.new(0.6, 1.8)
+	emitter.SpreadAngle = Vector2.new(180, 180)
+	emitter.Size = NumberSequence.new(0.28)
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.25),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.LightEmission = 0.8
+	emitter.Parent = torso
+
+	if tier >= 5 then -- Mythic+ glow
+		local light = Instance.new("PointLight")
+		light.Name = ACCESSORY_TAG
+		light.Color = palette.Accent
+		light.Range = 11
+		light.Brightness = 1.1
+		light.Parent = torso
+	end
+end
+
 -- ------------------------------ HAT BUILDERS ---------------------------------
 
 local HATS: { [string]: (character: Model, head: BasePart, palette: AppearanceData.Palette) -> () } = {}
@@ -256,7 +463,24 @@ function AppearanceService:ApplyAppearance(player: Player, character: Model, cha
 	local head = character:FindFirstChild("Head")
 	if head and head:IsA("BasePart") then
 		head.Color = AppearanceData.SkinTone
+		-- Anime face: big eyes with element-colored irises + highlights.
+		buildFace(character, head, palette)
+		-- Anime hair: signature style/color, or class/element defaults.
+		-- (Skipped under full helmets to avoid clipping.)
+		if hatId ~= "Helmet" then
+			local hairId = (override and override.Hair) or AppearanceData.ClassHair[characterDef.Class] or "SpikyShort"
+			local hairColor = (override and override.HairColor)
+				or AppearanceData.HairColorByElement[characterDef.Element]
+				or Color3.fromRGB(60, 50, 55)
+			local hairBuilder = HAIRS[hairId]
+			if hairBuilder then
+				hairBuilder(character, head, hairColor)
+			end
+		end
 	end
+
+	-- Element aura particles + glow for high-rarity heroes.
+	buildAura(character, palette, characterDef.Rarity)
 
 	-- Pirate theme extra: waist sash for the Grand Ocean crew.
 	if override and override.Theme == "Pirate" then

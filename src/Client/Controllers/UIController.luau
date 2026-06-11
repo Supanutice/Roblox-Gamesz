@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Net.Remotes)
+local Theme = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("Theme"))
 
 local UIController = {}
 
@@ -41,12 +42,27 @@ local function buildHUD()
 	healthBack.AnchorPoint = Vector2.new(0, 1)
 	healthBack.Position = UDim2.new(0.02, 0, 0.95, 0)
 	healthBack.Size = UDim2.fromScale(0.24, 0.025)
-	healthBack.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+	healthBack.BackgroundColor3 = Color3.fromRGB(22, 20, 32)
+	local healthCorner = Instance.new("UICorner")
+	healthCorner.CornerRadius = UDim.new(0.5, 0)
+	healthCorner.Parent = healthBack
+	local healthStroke = Instance.new("UIStroke")
+	healthStroke.Color = Theme.Colors.Gold
+	healthStroke.Transparency = 0.7
+	healthStroke.Thickness = 1.2
+	healthStroke.Parent = healthBack
 	healthBack.Parent = hudFrame
 	local healthFill = Instance.new("Frame")
 	healthFill.Name = "Fill"
 	healthFill.Size = UDim2.fromScale(1, 1)
 	healthFill.BackgroundColor3 = Color3.fromRGB(90, 220, 110)
+	local fillCorner = Instance.new("UICorner")
+	fillCorner.CornerRadius = UDim.new(0.5, 0)
+	fillCorner.Parent = healthFill
+	local fillSheen = Instance.new("UIGradient")
+	fillSheen.Rotation = 90
+	fillSheen.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.72, 0.72, 0.72))
+	fillSheen.Parent = healthFill
 	healthFill.Parent = healthBack
 	hud.HealthFill = healthFill
 
@@ -66,12 +82,25 @@ local function buildHUD()
 	currencyLabel.AnchorPoint = Vector2.new(1, 0)
 	currencyLabel.Position = UDim2.new(0.99, 0, 0.02, 0)
 	currencyLabel.Size = UDim2.fromScale(0.3, 0.04)
-	currencyLabel.BackgroundTransparency = 1
+	currencyLabel.BackgroundColor3 = Theme.Colors.Panel
+	currencyLabel.BackgroundTransparency = 0.25
 	currencyLabel.TextColor3 = Color3.new(1, 1, 1)
 	currencyLabel.TextXAlignment = Enum.TextXAlignment.Right
 	currencyLabel.TextScaled = true
 	currencyLabel.Font = Enum.Font.GothamBold
 	currencyLabel.Text = ""
+	local chipCorner = Instance.new("UICorner")
+	chipCorner.CornerRadius = UDim.new(0.4, 0)
+	chipCorner.Parent = currencyLabel
+	local chipStroke = Instance.new("UIStroke")
+	chipStroke.Color = Theme.Colors.Gold
+	chipStroke.Transparency = 0.6
+	chipStroke.Thickness = 1.2
+	chipStroke.Parent = currencyLabel
+	local chipPadding = Instance.new("UIPadding")
+	chipPadding.PaddingLeft = UDim.new(0, 10)
+	chipPadding.PaddingRight = UDim.new(0, 10)
+	chipPadding.Parent = currencyLabel
 	currencyLabel.Parent = hudFrame
 	hud.CurrencyLabel = currencyLabel
 
@@ -93,6 +122,15 @@ local function buildHUD()
 		local corner = Instance.new("UICorner")
 		corner.CornerRadius = UDim.new(0.2, 0)
 		corner.Parent = button
+		local slotStroke = Instance.new("UIStroke")
+		slotStroke.Color = if slot == 3 then Theme.Colors.Gold else Theme.Colors.Violet
+		slotStroke.Transparency = 0.55
+		slotStroke.Thickness = 1.4
+		slotStroke.Parent = button
+		local slotSheen = Instance.new("UIGradient")
+		slotSheen.Rotation = 90
+		slotSheen.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.75, 0.75, 0.8))
+		slotSheen.Parent = button
 		hud.SkillButtons[slot] = button
 	end
 
@@ -178,9 +216,11 @@ function UIController:OpenScreen(name: string)
 		end
 		screen = require(module)
 		screen.Frame = screen.Build(screenGui, self)
+		Theme.PolishScreen(screen.Frame)
 		screens[name] = screen
 	end
 	screen.Frame.Visible = true
+	Theme.AnimateOpen(screen.Frame)
 	if screen.Open then
 		screen.Open(self)
 	end

@@ -27,6 +27,17 @@ return {
 		-- currencies. No premium-exclusive characters or stats.
 		FreeTrackHighlights = { "Gems x2000 total", "Evolution materials", "Summon tickets x10" },
 		PremiumTrackHighlights = { "Seasonal skin set", "Mount skin", "Ultimate VFX recolor", "Gems x3000 total" },
+		-- Claimable tier rewards (EconomyService merges the matching rules).
+		FreeRewards = {
+			EveryTier = { Gold = 2_000 },
+			Every5 = { Gems = 60 },
+			Every10 = { CON_SUMMON_TICKET = 1, MAT_EVO_SHARD = 5 },
+		},
+		PremiumRewards = {
+			EveryTier = { Gems = 60 },
+			-- Every 10th premium tier also unlocks a seasonal cosmetic:
+			CosmeticIdPattern = "BP_S%d_TIER%d_SKIN",
+		},
 	},
 
 	CosmeticShop = {

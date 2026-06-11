@@ -68,6 +68,9 @@ function InputController:Init()
 	bindKey(Enum.KeyCode.V, function()
 		self.OpenMenu:Fire("Party")
 	end)
+	bindKey(Enum.KeyCode.M, function()
+		self.OpenMenu:Fire("Shop")
+	end)
 end
 
 function InputController:Start()

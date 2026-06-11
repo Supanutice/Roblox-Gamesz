@@ -14,7 +14,7 @@ local Remotes = require(Shared.Net.Remotes)
 
 local EconomyService = { Name = "EconomyService" }
 
-local DataService, InventoryService
+local DataService, InventoryService, LiveOpsService
 
 local SECONDS_PER_DAY = 86_400
 
@@ -63,6 +63,83 @@ function EconomyService:AddBattlePassXP(player: Player, amount: number)
 	profile.Dirty = true
 end
 
+-- Rewards for one battle pass tier on a track (merged from the config rules).
+local function tierRewards(tier: number, track: "Free" | "Premium", seasonId: number): { [string]: number }
+	local config = MonetizationConfig.BattlePass
+	local rules = if track == "Free" then config.FreeRewards else config.PremiumRewards
+	local merged: { [string]: number } = {}
+	for key, amount in rules.EveryTier do
+		merged[key] = (merged[key] or 0) + amount
+	end
+	if track == "Free" then
+		if tier % 5 == 0 then
+			for key, amount in rules.Every5 do
+				merged[key] = (merged[key] or 0) + amount
+			end
+		end
+		if tier % 10 == 0 then
+			for key, amount in rules.Every10 do
+				merged[key] = (merged[key] or 0) + amount
+			end
+		end
+	end
+	return merged
+end
+
+function EconomyService:ClaimBattlePassTier(player: Player, tier: number, track: "Free" | "Premium"): (boolean, any)
+	local profile = DataService:GetProfile(player)
+	if not profile then
+		return false, "No profile"
+	end
+	local config = MonetizationConfig.BattlePass
+	if typeof(tier) ~= "number" or tier ~= math.floor(tier) or tier < 1 or tier > config.Tiers then
+		return false, "Invalid tier"
+	end
+	local bp = profile.Data.BattlePass
+	if tier > bp.Tier then
+		return false, "Tier not reached"
+	end
+	local claimedMap = if track == "Free" then bp.ClaimedFree else bp.ClaimedPremium
+	if claimedMap[tier] then
+		return false, "Already claimed"
+	end
+	if track == "Premium" and not bp.PremiumOwned then
+		return false, "Premium pass required"
+	end
+
+	local rewards = tierRewards(tier, track, bp.SeasonId)
+	InventoryService:GrantRewards(player, rewards)
+	-- Every 10th premium tier unlocks the seasonal cosmetic.
+	if track == "Premium" and tier % 10 == 0 then
+		local cosmeticId = string.format(MonetizationConfig.BattlePass.PremiumRewards.CosmeticIdPattern, bp.SeasonId, tier)
+		profile.Data.Cosmetics.Owned[cosmeticId] = true
+		rewards = table.clone(rewards)
+		;(rewards :: any)[cosmeticId] = 1
+	end
+	claimedMap[tier] = true
+	profile.Dirty = true
+	return true, rewards
+end
+
+-- Snapshot for the Shop screen.
+function EconomyService:GetShopData(player: Player): (boolean, any)
+	local profile = DataService:GetProfile(player)
+	if not profile then
+		return false, "No profile"
+	end
+	local daily = profile.Data.DailyRewards
+	return true, {
+		Rotation = if LiveOpsService then LiveOpsService:GetShopRotation() else {},
+		CosmeticPriceGems = 250,
+		BattlePass = profile.Data.BattlePass,
+		Daily = {
+			Streak = daily.Streak,
+			CanClaim = utcDayNumber(os.time()) > utcDayNumber(daily.LastClaimUnix),
+		},
+		OwnedCosmetics = profile.Data.Cosmetics.Owned,
+	}
+end
+
 -- ------------------------ ROBUX PURCHASES ----------------------------------
 
 local function processReceipt(receiptInfo): Enum.ProductPurchaseDecision
@@ -88,6 +165,7 @@ end
 function EconomyService:Init(registry)
 	DataService = registry.DataService
 	InventoryService = registry.InventoryService
+	LiveOpsService = registry.LiveOpsService
 end
 
 function EconomyService:Start()
@@ -101,6 +179,19 @@ function EconomyService:Start()
 		-- MarketplaceService, not this path).
 		local ok, err = self:PurchaseCosmetic(player, productId)
 		return ok, err
+	end
+	Remotes.Function("ShopData").OnServerInvoke = function(player)
+		return self:GetShopData(player)
+	end
+	Remotes.Function("DailyRewardClaim").OnServerInvoke = function(player)
+		local ok, reward = self:TryClaimDailyReward(player)
+		return ok, if ok then reward else "Already claimed today"
+	end
+	Remotes.Function("BattlePassClaim").OnServerInvoke = function(player, tier, track)
+		if track ~= "Free" and track ~= "Premium" then
+			return false, "Invalid track"
+		end
+		return self:ClaimBattlePassTier(player, tier, track)
 	end
 
 	-- Premium battle pass detection.

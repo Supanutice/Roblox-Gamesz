@@ -27,6 +27,9 @@ Team assumption: 1 lead engineer, 1 gameplay engineer, 2 artists/animators,
 - [x] PvP playable end-to-end: ArenaService round loop (countdown, last
       team standing, timeouts, double-KO replays, position restore) +
       PvP menu with queue/cancel, rating and rank cards
+- [x] Shop screen (M): daily reward claims with streak, full 50-tier
+      battle pass claiming (free + premium tracks), cosmetic rotation
+      purchases
 - [ ] World 1 geometry + placeholder rigs replaced with real art
 - [ ] First playtest: 20-player server soak, save-integrity pass
 

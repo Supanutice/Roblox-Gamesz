@@ -71,6 +71,9 @@ local DEFINITIONS: { [string]: string } = {
 
 	-- Shop / monetization (cosmetics only)
 	ShopPurchase = "Function",          -- (productId: string) -> ok, err
+	ShopData = "Function",              -- () -> ok, { Rotation, BattlePass, Daily }
+	DailyRewardClaim = "Function",      -- () -> ok, rewards | err
+	BattlePassClaim = "Function",       -- (tier: number, track: "Free"|"Premium") -> ok, rewards | err
 }
 
 local Remotes = {}
